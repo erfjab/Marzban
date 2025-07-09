@@ -27,4 +27,4 @@ MOREBOT_SECRET=""  # Secret key received from MoreBot (Server Info section)
 MOREBOT_LICENSE="" # License key provided by the admin (@ErfJab)  
 ```  
 
-Finally, restart Marzban. Done.
+Finally, update and restart Marzban. Done.
