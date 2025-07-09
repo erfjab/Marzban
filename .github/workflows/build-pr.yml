@@ -48,4 +48,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            erfjab/moreban:pr-${{github.event.number}}
+            erfjab/marzban:pr-${{github.event.number}}
