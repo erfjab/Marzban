@@ -10,6 +10,7 @@ from app.models.system import SystemStats
 from app.models.user import UserStatus
 from app.utils import responses
 from app.utils.system import cpu_usage, memory_usage, realtime_bandwidth
+from app.morebot import Morebot
 
 router = APIRouter(tags=["System"], prefix="/api", responses={401: responses._401})
 
@@ -66,8 +67,12 @@ def get_system_stats(
 @router.get("/inbounds", response_model=Dict[ProxyTypes, List[ProxyInbound]])
 def get_inbounds(admin: Admin = Depends(Admin.get_current)):
     """Retrieve inbound configurations grouped by protocol."""
-    return xray.config.inbounds_by_protocol
-
+    system_inbounds = xray.config.inbounds_by_protocol
+    if not admin.is_sudo:
+        more_inbounds = Morebot.get_configs(username=admin.username, configs=system_inbounds)
+        return more_inbounds or system_inbounds
+    return system_inbounds
+    
 
 @router.get(
     "/hosts", response_model=Dict[str, List[ProxyHost]], responses={403: responses._403}
