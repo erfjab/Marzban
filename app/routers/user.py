@@ -18,6 +18,7 @@ from app.models.user import (
     UserUsagesResponse,
 )
 from app.utils import report, responses
+from config import SUDOERS
 
 router = APIRouter(tags=["User"], prefix="/api", responses={401: responses._401})
 
@@ -149,8 +150,10 @@ def remove_user(
     bg.add_task(xray.operations.remove_user, dbuser=dbuser)
 
     bg.add_task(
-        report.user_deleted, username=dbuser.username, user_admin=Admin.model_validate(dbuser.admin), by=admin
-    )
+            report.user_deleted, username=dbuser.username,
+            user_admin=Admin.model_validate(dbuser.admin) if dbuser.admin else None,
+            by=admin
+        )
 
     logger.info(f'User "{dbuser.username}" deleted')
     return {"detail": "User successfully deleted"}
@@ -275,13 +278,14 @@ def active_next_plan(
     dbuser: UserResponse = Depends(get_validated_user),
 ):
     """Reset user by next plan"""
-    dbuser = crud.reset_user_by_next(db=db, dbuser=dbuser)
 
     if (dbuser is None or dbuser.next_plan is None):
         raise HTTPException(
             status_code=404,
             detail=f"User doesn't have next plan",
         )
+
+    dbuser = crud.reset_user_by_next(db=db, dbuser=dbuser)
 
     if dbuser.status in [UserStatus.active, UserStatus.on_hold]:
         bg.add_task(xray.operations.add_user, dbuser=dbuser)

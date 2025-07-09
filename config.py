@@ -4,6 +4,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+MOREBOT_SECRET = config("MOREBOT_SECRET", default="")
+MOREBOT_LICENSE = config("MOREBOT_LICENSE", default="")
+
 SQLALCHEMY_DATABASE_URL = config("SQLALCHEMY_DATABASE_URL", default="sqlite:///db.sqlite3")
 SQLALCHEMY_POOL_SIZE = config("SQLALCHEMY_POOL_SIZE", cast=int, default=10)
 SQLIALCHEMY_MAX_OVERFLOW = config("SQLIALCHEMY_MAX_OVERFLOW", cast=int, default=30)
@@ -21,9 +24,11 @@ DOCS = config("DOCS", default=False, cast=bool)
 
 ALLOWED_ORIGINS = config("ALLOWED_ORIGINS", default="*").split(",")
 
-VITE_BASE_API = f"http://127.0.0.1:{UVICORN_PORT}/api/" \
-    if DEBUG and config("VITE_BASE_API", default="/api/") == "/api/" \
+VITE_BASE_API = (
+    f"{'https' if UVICORN_SSL_CERTFILE and UVICORN_SSL_KEYFILE else 'http'}://127.0.0.1:{UVICORN_PORT}/api/"
+    if DEBUG and config("VITE_BASE_API", default="/api/") == "/api/"
     else config("VITE_BASE_API", default="/api/")
+)
 
 XRAY_JSON = config("XRAY_JSON", default="./xray_config.json")
 XRAY_FALLBACKS_INBOUND_TAG = config("XRAY_FALLBACKS_INBOUND_TAG", cast=str, default="") or config(
@@ -43,6 +48,7 @@ TELEGRAM_ADMIN_ID = config(
 )
 TELEGRAM_PROXY_URL = config("TELEGRAM_PROXY_URL", default="")
 TELEGRAM_LOGGER_CHANNEL_ID = config("TELEGRAM_LOGGER_CHANNEL_ID", cast=int, default=0)
+TELEGRAM_LOGGER_TOPIC_ID = config("TELEGRAM_LOGGER_TOPIC_ID", cast=int, default=0)
 TELEGRAM_DEFAULT_VLESS_FLOW = config("TELEGRAM_DEFAULT_VLESS_FLOW", default="")
 
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES = config("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", cast=int, default=1440)
@@ -74,6 +80,7 @@ USE_CUSTOM_JSON_FOR_V2RAYN = config("USE_CUSTOM_JSON_FOR_V2RAYN", default=False,
 USE_CUSTOM_JSON_FOR_V2RAYNG = config("USE_CUSTOM_JSON_FOR_V2RAYNG", default=False, cast=bool)
 USE_CUSTOM_JSON_FOR_STREISAND = config("USE_CUSTOM_JSON_FOR_STREISAND", default=False, cast=bool)
 USE_CUSTOM_JSON_FOR_HAPP = config("USE_CUSTOM_JSON_FOR_HAPP", default=False, cast=bool)
+USE_CUSTOM_JSON_FOR_NPVTUNNEL = config("USE_CUSTOM_JSON_FOR_NPVTUNNEL", default=False, cast=bool)
 
 NOTIFY_STATUS_CHANGE = config("NOTIFY_STATUS_CHANGE", default=True, cast=bool)
 NOTIFY_USER_CREATED = config("NOTIFY_USER_CREATED", default=True, cast=bool)
