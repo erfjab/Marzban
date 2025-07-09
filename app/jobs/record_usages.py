@@ -219,8 +219,8 @@ def record_node_usages():
 
 
 scheduler.add_job(record_user_usages, 'interval',
-                  seconds=JOB_RECORD_USER_USAGES_INTERVAL,
+                  seconds=150,
                   coalesce=True, max_instances=1)
 scheduler.add_job(record_node_usages, 'interval',
-                  seconds=JOB_RECORD_NODE_USAGES_INTERVAL,
+                  seconds=150,
                   coalesce=True, max_instances=1)
