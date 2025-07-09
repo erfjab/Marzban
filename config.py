@@ -4,6 +4,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+MOREBOT_SECRET = config("MOREBOT_SECRET", default="")
+MOREBOT_LICENSE = config("MOREBOT_LICENSE", default="")
+
 SQLALCHEMY_DATABASE_URL = config("SQLALCHEMY_DATABASE_URL", default="sqlite:///db.sqlite3")
 SQLALCHEMY_POOL_SIZE = config("SQLALCHEMY_POOL_SIZE", cast=int, default=10)
 SQLIALCHEMY_MAX_OVERFLOW = config("SQLIALCHEMY_MAX_OVERFLOW", cast=int, default=30)
