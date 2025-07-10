@@ -151,7 +151,7 @@ def record_user_usages():
 
     with GetDB() as db:
         user_admin_map = dict(db.query(User.id, User.admin_id).all())
-        Morebot.report_admin_usage(db, users_usage=user_usage, user_admin_map=user_admin_map)
+        Morebot.report_admin_usage(db, users_usage=users_usage, user_admin_map=user_admin_map)
 
     admin_usage = defaultdict(int)
     for user_usage in users_usage:
