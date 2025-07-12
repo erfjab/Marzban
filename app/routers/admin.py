@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -8,6 +8,8 @@ from app import xray
 from app.db import Session, crud, get_db
 from app.dependencies import get_admin_by_username, validate_admin
 from app.models.admin import Admin, AdminCreate, AdminModify, Token
+from app.models.proxy import ProxyInbound, ProxyTypes, ShadowsocksSettings, VLESSSettings, VMessSettings, TrojanSettings
+from app.models.user import UserStatus, UserModify
 from app.utils import report, responses
 from app.utils.jwt import create_admin_token
 from config import LOGIN_NOTIFY_WHITE_LIST
@@ -189,3 +191,78 @@ def get_admin_usage(
 ):
     """Retrieve the usage of given admin."""
     return dbadmin.users_usage
+
+
+#! IF this is dirty, because your system is dirty!
+@router.post(
+    "/admin/{username}/sync",
+    response_model=Dict[str, int],
+    responses={403: responses._403, 409: responses._409},
+)
+def sync_admin(
+    configs: Dict[ProxyTypes, List[ProxyInbound]],
+    dbadmin: Admin = Depends(get_admin_by_username),
+    db: Session = Depends(get_db),
+    admin: Admin = Depends(Admin.check_sudo_admin),
+):
+    """Sync user inbounds with allowed configs"""
+    users = crud.get_users(db=db, admin=dbadmin)
+    unsuccessful = 0
+
+    allowed_inbounds = {
+        protocol: [inbound.tag for inbound in inbounds]
+        for protocol, inbounds in configs.items()
+    }
+
+    for user in users:
+        try:
+            new_inbounds = {}
+            for protocol, tags in user.inbounds.items():
+                if protocol in allowed_inbounds:
+                    new_tags = [tag for tag in tags if tag in allowed_inbounds[protocol]]
+                    if new_tags:
+                        new_inbounds[protocol] = new_tags
+
+            for protocol, tags in allowed_inbounds.items():
+                if protocol in new_inbounds:
+                    existing_tags = set(new_inbounds[protocol])
+                    new_tags = list(existing_tags.union(tags))
+                    new_inbounds[protocol] = new_tags
+                else:
+                    new_inbounds[protocol] = tags
+
+            new_proxies = {
+                p.type.value: p.settings 
+                for p in user.proxies 
+                if p.type.value in new_inbounds
+            }
+            
+            for protocol in new_inbounds:
+                if protocol not in new_proxies:
+                    if protocol == ProxyTypes.Shadowsocks:
+                        new_proxies[protocol] = ShadowsocksSettings().dict()
+                    elif protocol == ProxyTypes.VMess:
+                        new_proxies[protocol] = VMessSettings().dict()
+                    elif protocol == ProxyTypes.VLESS:
+                        new_proxies[protocol] = VLESSSettings().dict()
+                    elif protocol == ProxyTypes.Trojan:
+                        new_proxies[protocol] = TrojanSettings().dict()
+
+            if new_inbounds != user.inbounds or new_proxies != {p.type.value: p.settings for p in user.proxies}:
+                user = crud.update_user(
+                    db,
+                    user,
+                    UserModify(inbounds=new_inbounds, proxies=new_proxies))
+                
+                if user.status in [UserStatus.active, UserStatus.on_hold]:
+                    xray.operations.update_user(user)
+
+        except Exception:
+            db.rollback()
+            unsuccessful += 1
+
+    return {
+        "total": len(users),
+        "success": len(users) - unsuccessful,
+        "unsuccessful": unsuccessful
+    }
