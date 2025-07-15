@@ -33,7 +33,7 @@ export const OnlineStatus: FC<UserStatusProps> = ({lastOnline}) => {
                 color: "gray.400",
             }}
         >
-            {timeDifferenceInSeconds && timeDifferenceInSeconds <= 60
+            {timeDifferenceInSeconds && timeDifferenceInSeconds <= 180
                 ? "Online"
                 : timeDifferenceInSeconds
                     ? `${dateInfo.time} ago`
