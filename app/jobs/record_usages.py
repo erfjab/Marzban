@@ -19,6 +19,7 @@ from config import (
 )
 from xray_api import XRay as XRayAPI
 from xray_api import exc as xray_exc
+from app.morebot import Morebot
 
 
 def safe_execute(db: Session, stmt, params=None):
@@ -151,6 +152,7 @@ def record_user_usages():
 
     with GetDB() as db:
         user_admin_map = dict(db.query(User.id, User.admin_id).all())
+        Morebot.report_admin_usage(db, users_usage=users_usage, user_admin_map=user_admin_map)
 
     admin_usage = defaultdict(int)
     for user_usage in users_usage:
@@ -218,8 +220,8 @@ def record_node_usages():
 
 
 scheduler.add_job(record_user_usages, 'interval',
-                  seconds=JOB_RECORD_USER_USAGES_INTERVAL,
+                  seconds=150,
                   coalesce=True, max_instances=1)
 scheduler.add_job(record_node_usages, 'interval',
-                  seconds=JOB_RECORD_NODE_USAGES_INTERVAL,
+                  seconds=150,
                   coalesce=True, max_instances=1)
