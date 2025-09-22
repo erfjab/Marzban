@@ -21,29 +21,33 @@ class UserTemplate(BaseModel):
 
 
 class UserTemplateCreate(UserTemplate):
-    model_config = ConfigDict(json_schema_extra={
-        "example": {
-            "name": "my template 1",
-            "username_prefix": None,
-            "username_suffix": None,
-            "inbounds": {"vmess": ["VMESS_INBOUND"], "vless": ["VLESS_INBOUND"]},
-            "data_limit": 0,
-            "expire_duration": 0,
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "name": "my template 1",
+                "username_prefix": None,
+                "username_suffix": None,
+                "inbounds": {"vmess": ["VMESS_INBOUND"], "vless": ["VLESS_INBOUND"]},
+                "data_limit": 0,
+                "expire_duration": 0,
+            }
         }
-    })
+    )
 
 
 class UserTemplateModify(UserTemplate):
-    model_config = ConfigDict(json_schema_extra={
-        "example": {
-            "name": "my template 1",
-            "username_prefix": None,
-            "username_suffix": None,
-            "inbounds": {"vmess": ["VMESS_INBOUND"], "vless": ["VLESS_INBOUND"]},
-            "data_limit": 0,
-            "expire_duration": 0,
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "name": "my template 1",
+                "username_prefix": None,
+                "username_suffix": None,
+                "inbounds": {"vmess": ["VMESS_INBOUND"], "vless": ["VLESS_INBOUND"]},
+                "data_limit": 0,
+                "expire_duration": 0,
+            }
         }
-    })
+    )
 
 
 class UserTemplateResponse(UserTemplate):
@@ -62,4 +66,5 @@ class UserTemplateResponse(UserTemplate):
                     else:
                         final[protocol] = [inbound["tag"]]
         return final
+
     model_config = ConfigDict(from_attributes=True)

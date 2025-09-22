@@ -11,19 +11,19 @@ import sqlalchemy as sa
 from sqlalchemy.sql import func, case
 
 # revision identifiers, used by Alembic.
-revision = '54c4b8c525fc'
-down_revision = '2313cdc30da3'
+revision = "54c4b8c525fc"
+down_revision = "2313cdc30da3"
 branch_labels = None
 depends_on = None
 
 # Define the 'users' table
 users_table = sa.Table(
-    'users',
+    "users",
     sa.MetaData(),
-    sa.Column('id', sa.Integer, primary_key=True),
-    sa.Column('status', sa.String),
-    sa.Column('expire', sa.Integer),  # Assuming 'expire' is a UNIX timestamp
-    sa.Column('last_status_change', sa.DateTime)
+    sa.Column("id", sa.Integer, primary_key=True),
+    sa.Column("status", sa.String),
+    sa.Column("expire", sa.Integer),  # Assuming 'expire' is a UNIX timestamp
+    sa.Column("last_status_change", sa.DateTime),
 )
 
 
@@ -37,8 +37,7 @@ def upgrade() -> None:
             sa.update(users_table)
             .where(
                 sa.and_(
-                    users_table.c.status == 'expired',
-                    users_table.c.expire.isnot(None)
+                    users_table.c.status == "expired", users_table.c.expire.isnot(None)
                 )
             )
             .values(last_status_change=func.from_unixtime(users_table.c.expire))
@@ -49,11 +48,10 @@ def upgrade() -> None:
             sa.update(users_table)
             .where(
                 sa.and_(
-                    users_table.c.status == 'expired',
-                    users_table.c.expire.isnot(None)
+                    users_table.c.status == "expired", users_table.c.expire.isnot(None)
                 )
             )
-            .values(last_status_change=func.datetime(users_table.c.expire, 'unixepoch'))
+            .values(last_status_change=func.datetime(users_table.c.expire, "unixepoch"))
         )
 
     # Execute the update statement
@@ -67,10 +65,7 @@ def downgrade() -> None:
     update_stmt = (
         sa.update(users_table)
         .where(
-            sa.and_(
-                users_table.c.status == 'expired',
-                users_table.c.expire.isnot(None)
-            )
+            sa.and_(users_table.c.status == "expired", users_table.c.expire.isnot(None))
         )
         .values(last_status_change=func.now())  # CURRENT_TIMESTAMP equivalent
     )

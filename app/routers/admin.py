@@ -8,9 +8,17 @@ from app import xray
 from app.db import Session, crud, get_db
 from app.dependencies import get_admin_by_username, validate_admin
 from app.models.admin import Admin, AdminCreate, AdminModify, Token
-from app.models.proxy import ProxyInbound, ProxyTypes, ShadowsocksSettings, VLESSSettings, VMessSettings, TrojanSettings
+from app.models.proxy import (
+    ProxyInbound,
+    ProxyTypes,
+    ShadowsocksSettings,
+    VLESSSettings,
+    VMessSettings,
+    TrojanSettings,
+)
 from app.models.user import UserStatus, UserModify
 from app.utils import report, responses
+from app.morebot import Morebot
 from app.utils.jwt import create_admin_token
 from config import LOGIN_NOTIFY_WHITE_LIST
 
@@ -136,10 +144,14 @@ def get_admins(
     return crud.get_admins(db, offset, limit, username)
 
 
-@router.post("/admin/{username}/users/disable", responses={403: responses._403, 404: responses._404})
+@router.post(
+    "/admin/{username}/users/disable",
+    responses={403: responses._403, 404: responses._404},
+)
 def disable_all_active_users(
     dbadmin: Admin = Depends(get_admin_by_username),
-    db: Session = Depends(get_db), admin: Admin = Depends(Admin.check_sudo_admin)
+    db: Session = Depends(get_db),
+    admin: Admin = Depends(Admin.check_sudo_admin),
 ):
     """Disable all active users under a specific admin"""
     crud.disable_all_active_users(db=db, admin=dbadmin)
@@ -151,13 +163,18 @@ def disable_all_active_users(
     return {"detail": "Users successfully disabled"}
 
 
-@router.post("/admin/{username}/users/activate", responses={403: responses._403, 404: responses._404})
+@router.post(
+    "/admin/{username}/users/activate",
+    responses={403: responses._403, 404: responses._404},
+)
 def activate_all_disabled_users(
     dbadmin: Admin = Depends(get_admin_by_username),
-    db: Session = Depends(get_db), admin: Admin = Depends(Admin.check_sudo_admin)
+    db: Session = Depends(get_db),
+    admin: Admin = Depends(Admin.check_sudo_admin),
 ):
     """Activate all disabled users under a specific admin"""
-    crud.activate_all_disabled_users(db=db, admin=dbadmin)
+    users_limit = Morebot.get_users_limit(dbadmin.username)
+    crud.activate_all_disabled_users(db=db, admin=dbadmin, users_limit=users_limit)
     startup_config = xray.config.include_db_users()
     xray.core.restart(startup_config)
     for node_id, node in list(xray.nodes.items()):
@@ -174,7 +191,7 @@ def activate_all_disabled_users(
 def reset_admin_usage(
     dbadmin: Admin = Depends(get_admin_by_username),
     db: Session = Depends(get_db),
-    current_admin: Admin = Depends(Admin.check_sudo_admin)
+    current_admin: Admin = Depends(Admin.check_sudo_admin),
 ):
     """Resets usage of admin."""
     return crud.reset_admin_usage(db, dbadmin)
@@ -187,7 +204,7 @@ def reset_admin_usage(
 )
 def get_admin_usage(
     dbadmin: Admin = Depends(get_admin_by_username),
-    current_admin: Admin = Depends(Admin.check_sudo_admin)
+    current_admin: Admin = Depends(Admin.check_sudo_admin),
 ):
     """Retrieve the usage of given admin."""
     return dbadmin.users_usage
@@ -196,32 +213,59 @@ def get_admin_usage(
 #! IF this is dirty, because your system is dirty!
 @router.post(
     "/admin/{username}/sync",
-    response_model=Dict[str, int],
+    response_model=None,
     responses={403: responses._403, 409: responses._409},
 )
 def sync_admin(
-    configs: Dict[ProxyTypes, List[ProxyInbound]],
+    data: Dict,
     dbadmin: Admin = Depends(get_admin_by_username),
     db: Session = Depends(get_db),
     admin: Admin = Depends(Admin.check_sudo_admin),
 ):
     """Sync user inbounds with allowed configs"""
+    users_limit = data.get("users_limit")
+    configs = data.get("configs")
+
+    users = crud.get_users(
+        db=db,
+        admin=dbadmin,
+        offset=users_limit,
+        status=[UserStatus.active, UserStatus.on_hold],
+    )
+    if users:
+        try:
+            for user in users:
+                if user.status in [UserStatus.active, UserStatus.on_hold]:
+                    xray.operations.remove_user(user)
+                user = crud.update_user(
+                    db, user, UserModify(status=UserStatus.disabled)
+                )
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise HTTPException(
+                status_code=409, detail="Failed to disable users before sync. Aborting."
+            )
+
     users = crud.get_users(db=db, admin=dbadmin)
     unsuccessful = 0
 
     allowed_inbounds = {
-        protocol: [inbound.tag for inbound in inbounds]
+        protocol: [inbound["tag"] for inbound in inbounds]
         for protocol, inbounds in configs.items()
     }
 
     for user in users:
         try:
             new_inbounds = {}
-            for protocol, tags in user.inbounds.items():
-                if protocol in allowed_inbounds:
-                    new_tags = [tag for tag in tags if tag in allowed_inbounds[protocol]]
-                    if new_tags:
-                        new_inbounds[protocol] = new_tags
+            if user.inbounds:
+                for protocol, tags in user.inbounds.items():
+                    if protocol in allowed_inbounds:
+                        new_tags = [
+                            tag for tag in tags if tag in allowed_inbounds[protocol]
+                        ]
+                        if new_tags:
+                            new_inbounds[protocol] = new_tags
 
             for protocol, tags in allowed_inbounds.items():
                 if protocol in new_inbounds:
@@ -232,28 +276,28 @@ def sync_admin(
                     new_inbounds[protocol] = tags
 
             new_proxies = {
-                p.type.value: p.settings 
-                for p in user.proxies 
+                p.type.value: p.settings
+                for p in user.proxies
                 if p.type.value in new_inbounds
             }
-            
+
             for protocol in new_inbounds:
                 if protocol not in new_proxies:
-                    if protocol == ProxyTypes.Shadowsocks:
+                    if protocol == ProxyTypes.Shadowsocks.value:
                         new_proxies[protocol] = ShadowsocksSettings().dict()
-                    elif protocol == ProxyTypes.VMess:
+                    elif protocol == ProxyTypes.VMess.value:
                         new_proxies[protocol] = VMessSettings().dict()
-                    elif protocol == ProxyTypes.VLESS:
+                    elif protocol == ProxyTypes.VLESS.value:
                         new_proxies[protocol] = VLESSSettings().dict()
-                    elif protocol == ProxyTypes.Trojan:
+                    elif protocol == ProxyTypes.Trojan.value:
                         new_proxies[protocol] = TrojanSettings().dict()
 
-            if new_inbounds != user.inbounds or new_proxies != {p.type.value: p.settings for p in user.proxies}:
+            current_proxies = {p.type.value: p.settings for p in user.proxies}
+            if new_inbounds != user.inbounds or new_proxies != current_proxies:
                 user = crud.update_user(
-                    db,
-                    user,
-                    UserModify(inbounds=new_inbounds, proxies=new_proxies))
-                
+                    db, user, UserModify(inbounds=new_inbounds, proxies=new_proxies)
+                )
+
                 if user.status in [UserStatus.active, UserStatus.on_hold]:
                     xray.operations.update_user(user)
 
@@ -261,8 +305,4 @@ def sync_admin(
             db.rollback()
             unsuccessful += 1
 
-    return {
-        "total": len(users),
-        "success": len(users) - unsuccessful,
-        "unsuccessful": unsuccessful
-    }
+    return {"detail": f"Sync completed with {unsuccessful} unsuccessful updates."}
