@@ -30,6 +30,18 @@ class Morebot:
             return None
 
     @classmethod
+    def get_users_limit(cls, username: str) -> Optional[int]:
+        try:
+            response = requests.get(
+                url=f"{cls._base_url}/{username}/users_limit", timeout=cls._timeout
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data.get("users_limit", None)
+        except requests.RequestException:
+            return None
+
+    @classmethod
     def report_admin_usage(
         cls, db: Session, users_usage: List[Dict[str, Any]], user_admin_map: any
     ) -> bool:

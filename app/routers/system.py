@@ -69,10 +69,12 @@ def get_inbounds(admin: Admin = Depends(Admin.get_current)):
     """Retrieve inbound configurations grouped by protocol."""
     system_inbounds = xray.config.inbounds_by_protocol
     if not admin.is_sudo:
-        more_inbounds = Morebot.get_configs(username=admin.username, configs=system_inbounds)
+        more_inbounds = Morebot.get_configs(
+            username=admin.username, configs=system_inbounds
+        )
         return more_inbounds or system_inbounds
     return system_inbounds
-    
+
 
 @router.get(
     "/hosts", response_model=Dict[str, List[ProxyHost]], responses={403: responses._403}

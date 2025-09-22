@@ -31,6 +31,3 @@ if __name__ == "__main__":
         )
     except FileNotFoundError:  # to prevent error on removing unix sock
         pass
-
-
-

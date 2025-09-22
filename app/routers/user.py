@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app import logger, xray
 from app.db import Session, crud, get_db
+from app.morebot import Morebot
 from app.dependencies import get_expired_users_list, get_validated_user, validate_dates
 from app.models.admin import Admin
 from app.models.user import (
@@ -23,7 +24,11 @@ from config import SUDOERS
 router = APIRouter(tags=["User"], prefix="/api", responses={401: responses._401})
 
 
-@router.post("/user", response_model=UserResponse, responses={400: responses._400, 409: responses._409})
+@router.post(
+    "/user",
+    response_model=UserResponse,
+    responses={400: responses._400, 409: responses._409},
+)
 def add_user(
     new_user: UserCreate,
     bg: BackgroundTasks,
@@ -45,9 +50,18 @@ def add_user(
     - **on_hold_expire_duration**: Duration (in seconds) for how long the user should stay in `on_hold` status.
     - **next_plan**: Next user plan (resets after use).
     """
+    if not admin.is_sudo:
+        users_count = crud.get_users_count(
+            db, admin_id=admin.id, status=[UserStatus.active, UserStatus.on_hold]
+        )
+        users_limit = Morebot.get_users_limit(admin.username)
+        if users_count >= users_limit:
+            raise HTTPException(
+                status_code=400,
+                detail="User limit reached. Please contact your administrator.",
+            )
 
     # TODO expire should be datetime instead of timestamp
-
     for proxy_type in new_user.proxies:
         if not xray.config.inbounds_by_protocol.get(proxy_type):
             raise HTTPException(
@@ -70,13 +84,21 @@ def add_user(
     return user
 
 
-@router.get("/user/{username}", response_model=UserResponse, responses={403: responses._403, 404: responses._404})
+@router.get(
+    "/user/{username}",
+    response_model=UserResponse,
+    responses={403: responses._403, 404: responses._404},
+)
 def get_user(dbuser: UserResponse = Depends(get_validated_user)):
     """Get user information"""
     return dbuser
 
 
-@router.put("/user/{username}", response_model=UserResponse, responses={400: responses._400, 403: responses._403, 404: responses._404})
+@router.put(
+    "/user/{username}",
+    response_model=UserResponse,
+    responses={400: responses._400, 403: responses._403, 404: responses._404},
+)
 def modify_user(
     modified_user: UserModify,
     bg: BackgroundTasks,
@@ -101,6 +123,21 @@ def modify_user(
 
     Note: Fields set to `null` or omitted will not be modified.
     """
+    if not admin.is_sudo:
+        users_count = crud.get_users_count(
+            db, admin_id=admin.id, status=[UserStatus.active, UserStatus.on_hold]
+        )
+        users_limit = Morebot.get_users_limit(admin.username)
+        if (
+            users_count >= users_limit
+            and modified_user.status is not None
+            and modified_user.status in [UserStatus.active, UserStatus.on_hold]
+            and dbuser.status == UserStatus.disabled
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="User limit reached. Please contact your administrator.",
+            )
 
     for proxy_type in modified_user.proxies:
         if not xray.config.inbounds_by_protocol.get(proxy_type):
@@ -150,16 +187,21 @@ def remove_user(
     bg.add_task(xray.operations.remove_user, dbuser=dbuser)
 
     bg.add_task(
-            report.user_deleted, username=dbuser.username,
-            user_admin=Admin.model_validate(dbuser.admin) if dbuser.admin else None,
-            by=admin
-        )
+        report.user_deleted,
+        username=dbuser.username,
+        user_admin=Admin.model_validate(dbuser.admin) if dbuser.admin else None,
+        by=admin,
+    )
 
     logger.info(f'User "{dbuser.username}" deleted')
     return {"detail": "User successfully deleted"}
 
 
-@router.post("/user/{username}/reset", response_model=UserResponse, responses={403: responses._403, 404: responses._404})
+@router.post(
+    "/user/{username}/reset",
+    response_model=UserResponse,
+    responses={403: responses._403, 404: responses._404},
+)
 def reset_user_data_usage(
     bg: BackgroundTasks,
     db: Session = Depends(get_db),
@@ -180,7 +222,11 @@ def reset_user_data_usage(
     return dbuser
 
 
-@router.post("/user/{username}/revoke_sub", response_model=UserResponse, responses={403: responses._403, 404: responses._404})
+@router.post(
+    "/user/{username}/revoke_sub",
+    response_model=UserResponse,
+    responses={403: responses._403, 404: responses._404},
+)
 def revoke_user_subscription(
     bg: BackgroundTasks,
     db: Session = Depends(get_db),
@@ -202,7 +248,11 @@ def revoke_user_subscription(
     return user
 
 
-@router.get("/users", response_model=UsersResponse, responses={400: responses._400, 403: responses._403, 404: responses._404})
+@router.get(
+    "/users",
+    response_model=UsersResponse,
+    responses={400: responses._400, 403: responses._403, 404: responses._404},
+)
 def get_users(
     offset: int = None,
     limit: int = None,
@@ -256,7 +306,11 @@ def reset_users_data_usage(
     return {"detail": "Users successfully reset."}
 
 
-@router.get("/user/{username}/usage", response_model=UserUsagesResponse, responses={403: responses._403, 404: responses._404})
+@router.get(
+    "/user/{username}/usage",
+    response_model=UserUsagesResponse,
+    responses={403: responses._403, 404: responses._404},
+)
 def get_user_usage(
     dbuser: UserResponse = Depends(get_validated_user),
     start: str = "",
@@ -271,7 +325,11 @@ def get_user_usage(
     return {"usages": usages, "username": dbuser.username}
 
 
-@router.post("/user/{username}/active-next", response_model=UserResponse, responses={403: responses._403, 404: responses._404})
+@router.post(
+    "/user/{username}/active-next",
+    response_model=UserResponse,
+    responses={403: responses._403, 404: responses._404},
+)
 def active_next_plan(
     bg: BackgroundTasks,
     db: Session = Depends(get_db),
@@ -279,7 +337,7 @@ def active_next_plan(
 ):
     """Reset user by next plan"""
 
-    if (dbuser is None or dbuser.next_plan is None):
+    if dbuser is None or dbuser.next_plan is None:
         raise HTTPException(
             status_code=404,
             detail=f"User doesn't have next plan",
@@ -292,7 +350,9 @@ def active_next_plan(
 
     user = UserResponse.model_validate(dbuser)
     bg.add_task(
-        report.user_data_reset_by_next, user=user, user_admin=dbuser.admin,
+        report.user_data_reset_by_next,
+        user=user,
+        user_admin=dbuser.admin,
     )
 
     logger.info(f'User "{dbuser.username}"\'s usage was reset by next plan')
