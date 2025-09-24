@@ -50,11 +50,11 @@ def add_user(
     - **on_hold_expire_duration**: Duration (in seconds) for how long the user should stay in `on_hold` status.
     - **next_plan**: Next user plan (resets after use).
     """
-    if not admin.is_sudo:
+    users_limit = Morebot.get_users_limit(admin.username)
+    if not admin.is_sudo and users_limit is not None:
         users_count = crud.get_users_count(
             db, admin_id=admin.id, status=[UserStatus.active, UserStatus.on_hold]
         )
-        users_limit = Morebot.get_users_limit(admin.username)
         if users_count >= users_limit:
             raise HTTPException(
                 status_code=400,
@@ -122,12 +122,13 @@ def modify_user(
     - **next_plan**: Next user plan (resets after use).
 
     Note: Fields set to `null` or omitted will not be modified.
+
     """
-    if not admin.is_sudo:
+    users_limit = Morebot.get_users_limit(admin.username)
+    if not admin.is_sudo and users_limit is not None:
         users_count = crud.get_users_count(
             db, admin_id=admin.id, status=[UserStatus.active, UserStatus.on_hold]
         )
-        users_limit = Morebot.get_users_limit(admin.username)
         if (
             users_count >= users_limit
             and modified_user.status is not None
