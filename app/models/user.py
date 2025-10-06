@@ -1,4 +1,5 @@
 import re
+import random
 import secrets
 from datetime import datetime
 from enum import Enum
@@ -315,7 +316,7 @@ class UserResponse(User):
     def validate_subscription_url(self):
         if not self.subscription_url:
             salt = secrets.token_hex(8)
-            url_prefix = (XRAY_SUBSCRIPTION_URL_PREFIX).replace("*", salt)
+            url_prefix = random.choice(XRAY_SUBSCRIPTION_URL_PREFIX).replace("*", salt)
             token = create_subscription_token(self.username)
             self.subscription_url = f"{url_prefix}/{XRAY_SUBSCRIPTION_PATH}/{token}"
         return self
