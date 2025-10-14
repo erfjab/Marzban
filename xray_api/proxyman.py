@@ -10,7 +10,7 @@ from .types.message import Message, TypedMessage
 try:
     from .proto.core import config_pb2 as core_config_pb2
 except ModuleNotFoundError:
-    from .proto import config_pb2 as core_config_pb2
+    pass
 
 
 class Proxyman(XRayBase):

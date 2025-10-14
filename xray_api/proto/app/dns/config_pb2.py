@@ -14,11 +14,6 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-from xray_api.proto.common.net import address_pb2 as common_dot_net_dot_address__pb2
-from xray_api.proto.common.net import (
-    destination_pb2 as common_dot_net_dot_destination__pb2,
-)
-from xray_api.proto.app.router import config_pb2 as app_dot_router_dot_config__pb2
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(

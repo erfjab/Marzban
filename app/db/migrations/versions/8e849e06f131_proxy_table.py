@@ -10,7 +10,6 @@ import json
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.sql import select
-from sqlalchemy.dialects import sqlite
 
 # revision identifiers, used by Alembic.
 revision = "8e849e06f131"

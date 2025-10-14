@@ -161,7 +161,7 @@ class UserCreate(User):
         for proxy_type in self.proxies:
             excluded[proxy_type] = []
             for inbound in xray.config.inbounds_by_protocol.get(proxy_type, []):
-                if not inbound["tag"] in self.inbounds.get(proxy_type, []):
+                if inbound["tag"] not in self.inbounds.get(proxy_type, []):
                     excluded[proxy_type].append(inbound["tag"])
 
         return excluded
@@ -246,7 +246,7 @@ class UserModify(User):
         for proxy_type in self.inbounds:
             excluded[proxy_type] = []
             for inbound in xray.config.inbounds_by_protocol.get(proxy_type, []):
-                if not inbound["tag"] in self.inbounds.get(proxy_type, []):
+                if inbound["tag"] not in self.inbounds.get(proxy_type, []):
                     excluded[proxy_type].append(inbound["tag"])
 
         return excluded
@@ -316,7 +316,7 @@ class UserResponse(User):
     def validate_subscription_url(self):
         if not self.subscription_url:
             salt = secrets.token_hex(8)
-            url_prefix = random.choice(XRAY_SUBSCRIPTION_URL_PREFIX).replace("*", salt)
+            url_prefix = random.choice(XRAY_SUBSCRIPTION_URL_PREFIX).replace("*", salt) if XRAY_SUBSCRIPTION_URL_PREFIX else ""
             token = create_subscription_token(self.username)
             self.subscription_url = f"{url_prefix}/{XRAY_SUBSCRIPTION_PATH}/{token}"
         return self

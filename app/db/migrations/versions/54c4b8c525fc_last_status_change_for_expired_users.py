@@ -8,7 +8,7 @@ Create Date: 2024-07-25 11:15:51.776880
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.sql import func, case
+from sqlalchemy.sql import func
 
 # revision identifiers, used by Alembic.
 revision = "54c4b8c525fc"

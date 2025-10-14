@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from typing import List, Optional, Union
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
@@ -19,7 +19,6 @@ from app.models.user import (
     UserUsagesResponse,
 )
 from app.utils import report, responses
-from config import SUDOERS
 
 router = APIRouter(tags=["User"], prefix="/api", responses={401: responses._401})
 
@@ -341,7 +340,7 @@ def active_next_plan(
     if dbuser is None or dbuser.next_plan is None:
         raise HTTPException(
             status_code=404,
-            detail=f"User doesn't have next plan",
+            detail="User doesn't have next plan",
         )
 
     dbuser = crud.reset_user_by_next(db=db, dbuser=dbuser)

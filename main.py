@@ -1,5 +1,4 @@
 import uvicorn
-from app import app
 from config import (
     DEBUG,
     UVICORN_HOST,

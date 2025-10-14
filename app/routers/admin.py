@@ -9,7 +9,6 @@ from app.db import Session, crud, get_db
 from app.dependencies import get_admin_by_username, validate_admin
 from app.models.admin import Admin, AdminCreate, AdminModify, Token
 from app.models.proxy import (
-    ProxyInbound,
     ProxyTypes,
     ShadowsocksSettings,
     VLESSSettings,

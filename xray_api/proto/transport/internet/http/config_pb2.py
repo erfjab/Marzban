@@ -13,9 +13,6 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-from xray_api.proto.transport.internet.headers.http import (
-    config_pb2 as transport_dot_internet_dot_headers_dot_http_dot_config__pb2,
-)
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(

@@ -8,7 +8,6 @@ Create Date: 2023-10-22 13:58:12.431246
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import mysql
 from app.utils.crypto import generate_certificate
 
 # revision identifiers, used by Alembic.

@@ -13,11 +13,6 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-from xray_api.proto.common.protocol import user_pb2 as common_dot_protocol_dot_user__pb2
-from xray_api.proto.common.serial import (
-    typed_message_pb2 as common_dot_serial_dot_typed__message__pb2,
-)
-from xray_api.proto.core import config_pb2 as core_dot_config__pb2
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(

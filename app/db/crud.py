@@ -752,7 +752,9 @@ def disable_all_active_users(db: Session, admin: Optional[Admin] = None):
     db.commit()
 
 
-def activate_all_disabled_users(db: Session, admin: Optional[Admin] = None, users_limit: Optional[int] = None):
+def activate_all_disabled_users(
+    db: Session, admin: Optional[Admin] = None, users_limit: Optional[int] = None
+):
     """
     Activate all disabled users or users under a specific admin.
 
@@ -782,7 +784,10 @@ def activate_all_disabled_users(db: Session, admin: Optional[Admin] = None, user
             user.last_status_change = datetime.utcnow()
     else:
         query_for_active_users.update(
-            {User.status: UserStatus.active, User.last_status_change: datetime.utcnow()},
+            {
+                User.status: UserStatus.active,
+                User.last_status_change: datetime.utcnow(),
+            },
             synchronize_session=False,
         )
     query_for_on_hold_users.update(

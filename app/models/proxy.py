@@ -164,7 +164,7 @@ class ProxyHost(BaseModel):
     def validate_remark(cls, v):
         try:
             v.format_map(FormatVariables())
-        except ValueError as exc:
+        except ValueError:
             raise ValueError("Invalid formatting variables")
 
         return v
@@ -173,7 +173,7 @@ class ProxyHost(BaseModel):
     def validate_address(cls, v):
         try:
             v.format_map(FormatVariables())
-        except ValueError as exc:
+        except ValueError:
             raise ValueError("Invalid formatting variables")
 
         return v
