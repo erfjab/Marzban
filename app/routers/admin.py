@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
 
@@ -144,23 +144,50 @@ def get_admins(
     return crud.get_admins(db, offset, limit, username)
 
 
+def _remove_users_from_xray(user_ids: list):
+    """Background task to remove users from xray one by one"""
+    from app.db import GetDB
+
+    with GetDB() as db:
+        for user_id in user_ids:
+            user = crud.get_user_by_id(db, user_id)
+            if user:
+                xray.operations.remove_user(user)
+
+
 @router.post(
     "/admin/{username}/users/disable",
     responses={403: responses._403, 404: responses._404},
 )
 def disable_all_active_users(
+    background_tasks: BackgroundTasks,
     dbadmin: Admin = Depends(get_admin_by_username),
     db: Session = Depends(get_db),
     admin: Admin = Depends(Admin.check_sudo_admin),
 ):
     """Disable all active users under a specific admin"""
+    users_to_disable = crud.get_users(
+        db=db, admin=dbadmin, status=[UserStatus.active, UserStatus.on_hold]
+    )
+    
+    user_ids = [user.id for user in users_to_disable]
+    
     crud.disable_all_active_users(db=db, admin=dbadmin)
-    startup_config = xray.config.include_db_users()
-    xray.core.restart(startup_config)
-    for node_id, node in list(xray.nodes.items()):
-        if node.connected:
-            xray.operations.restart_node(node_id, startup_config)
+    
+    background_tasks.add_task(_remove_users_from_xray, user_ids)
+    
     return {"detail": "Users successfully disabled"}
+
+
+def _add_users_to_xray(user_ids: list):
+    """Background task to add users to xray one by one"""
+    from app.db import GetDB
+    
+    with GetDB() as db:
+        for user_id in user_ids:
+            user = crud.get_user_by_id(db, user_id)
+            if user and user.status in [UserStatus.active, UserStatus.on_hold]:
+                xray.operations.add_user(user)
 
 
 @router.post(
@@ -168,18 +195,25 @@ def disable_all_active_users(
     responses={403: responses._403, 404: responses._404},
 )
 def activate_all_disabled_users(
+    background_tasks: BackgroundTasks,
     dbadmin: Admin = Depends(get_admin_by_username),
     db: Session = Depends(get_db),
     admin: Admin = Depends(Admin.check_sudo_admin),
 ):
     """Activate all disabled users under a specific admin"""
     users_limit = Morebot.get_users_limit(dbadmin.username)
+
+    disabled_users = crud.get_users(db=db, admin=dbadmin, status=UserStatus.disabled)
+    
+    if users_limit is not None:
+        disabled_users = disabled_users[:users_limit]
+    
+    user_ids = [user.id for user in disabled_users]
+    
     crud.activate_all_disabled_users(db=db, admin=dbadmin, users_limit=users_limit)
-    startup_config = xray.config.include_db_users()
-    xray.core.restart(startup_config)
-    for node_id, node in list(xray.nodes.items()):
-        if node.connected:
-            xray.operations.restart_node(node_id, startup_config)
+    
+    background_tasks.add_task(_add_users_to_xray, user_ids)
+    
     return {"detail": "Users successfully activated"}
 
 
