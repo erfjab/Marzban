@@ -44,9 +44,9 @@ def get_subscription_user_info(user: UserResponse) -> dict:
         "expire": user.expire if user.expire is not None else 0,
     }
 
-
 @router.get("/{token}/")
 @router.get("/{token}", include_in_schema=False)
+@router.get("/{username}/{key}", include_in_schema=False)
 def user_subscription(
     request: Request,
     db: Session = Depends(get_db),

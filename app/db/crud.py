@@ -4,6 +4,7 @@ Functions for managing proxy hosts, users, user templates, nodes, and administra
 
 from datetime import datetime, timedelta
 from enum import Enum
+import secrets
 from typing import Dict, List, Optional, Tuple, Union
 
 from sqlalchemy import and_, delete, func, or_
@@ -613,6 +614,7 @@ def revoke_user_sub(db: Session, dbuser: User) -> User:
     Returns:
         User: The updated user object.
     """
+    dbuser.credential_key = secrets.token_hex(16)
     dbuser.sub_revoked_at = datetime.utcnow()
 
     user = UserResponse.model_validate(dbuser)
