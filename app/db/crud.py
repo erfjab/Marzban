@@ -193,6 +193,18 @@ def get_user(db: Session, username: str) -> Optional[User]:
     """
     return get_user_queryset(db).filter(User.username == username).first()
 
+def get_user_by_credential_key(db: Session, key: str) -> Optional[User]:
+    """
+    Retrieves a user by credential key.
+
+    Args:
+        db (Session): Database session.
+        key (str): The credential key of the user.
+
+    Returns:
+        Optional[User]: The user object if found, else None.
+    """
+    return get_user_queryset(db).filter(User.credential_key == key).first()
 
 def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
     """

@@ -65,30 +65,25 @@ def get_user_template(template_id: int, db: Session = Depends(get_db)):
 
 
 def get_validated_sub(
-        token: Optional[str] = None,
-        username: Optional[str] = None,
-        key: Optional[str] = None,
+        token: str,
         db: Session = Depends(get_db)
 ) -> UserResponse:
-    if token:
-        sub = get_subscription_payload(token)
-        if not sub:
-            raise HTTPException(status_code=404, detail="Not Found")
-
-        dbuser = crud.get_user(db, sub['username'])
-        if not dbuser or dbuser.created_at > sub['created_at']:
-            raise HTTPException(status_code=404, detail="Not Found")
-
-        if dbuser.sub_revoked_at and dbuser.sub_revoked_at > sub['created_at']:
+    if len(token) == 32:
+        dbuser = crud.get_user_by_credential_key(db, key=token)
+        if not dbuser or dbuser.credential_key != token:
             raise HTTPException(status_code=404, detail="Not Found")
         return dbuser
-    elif username and key:
-        dbuser = crud.get_user(db, username)
-        if not dbuser or dbuser.credential_key != key:
-            raise HTTPException(status_code=404, detail="Not Found")
-        return dbuser
-    else:
-        raise HTTPException(status_code=400, detail="Invalid request")
+    sub = get_subscription_payload(token)
+    if not sub:
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    dbuser = crud.get_user(db, sub['username'])
+    if not dbuser or dbuser.created_at > sub['created_at']:
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    if dbuser.sub_revoked_at and dbuser.sub_revoked_at > sub['created_at']:
+        raise HTTPException(status_code=404, detail="Not Found")
+    return dbuser
 
 
 def get_validated_user(

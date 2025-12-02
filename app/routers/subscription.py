@@ -46,7 +46,6 @@ def get_subscription_user_info(user: UserResponse) -> dict:
 
 @router.get("/{token}/")
 @router.get("/{token}", include_in_schema=False)
-@router.get("/{username}/{key}", include_in_schema=False)
 def user_subscription(
     request: Request,
     db: Session = Depends(get_db),
