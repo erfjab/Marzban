@@ -153,3 +153,12 @@ class UsersUsageLogItem(BaseModel):
 
 class UsersUsageLogResponse(BaseModel):
     usages: List[UsersUsageLogItem]
+
+
+class UserUsageInPeriod(BaseModel):
+    username: str
+    used_traffic: int
+
+
+class TopUsersResponse(BaseModel):
+    users: List[UserUsageInPeriod]

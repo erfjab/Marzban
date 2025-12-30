@@ -1647,3 +1647,23 @@ def get_users_usages_by_hour(
     query = query.group_by(NodeUserUsage.created_at).order_by(NodeUserUsage.created_at)
 
     return query.all()
+
+def get_top_users_usage(
+    db: Session,
+    start_date: datetime,
+    end_date: datetime,
+    limit: int = 10
+) -> List[Tuple[str, int]]:
+    """
+    Get top users by usage within a date range.
+    """
+    return (
+        db.query(User.username, func.sum(NodeUserUsage.used_traffic).label("total_usage"))
+        .join(NodeUserUsage, User.id == NodeUserUsage.user_id)
+        .filter(NodeUserUsage.created_at >= start_date)
+        .filter(NodeUserUsage.created_at <= end_date)
+        .group_by(User.id)
+        .order_by(func.sum(NodeUserUsage.used_traffic).desc())
+        .limit(limit)
+        .all()
+    )
