@@ -46,6 +46,8 @@ class Admin(Base):
     discord_webhook = Column(String(1024), nullable=True, default=None)
     users_usage = Column(BigInteger, nullable=False, default=0)
     usage_logs = relationship("AdminUsageLogs", back_populates="admin")
+    usage_warning_percent = Column(Integer, nullable=True, default=None)
+    days_warning = Column(Integer, nullable=True, default=None)
 
 
 class AdminUsageLogs(Base):

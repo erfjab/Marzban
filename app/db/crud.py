@@ -29,7 +29,7 @@ from app.db.models import (
     UserTemplate,
     UserUsageResetLogs,
 )
-from app.models.admin import AdminCreate, AdminModify, AdminPartialModify
+from app.models.admin import AdminCreate, AdminModify, AdminPartialModify, AdminSettingsModify
 from app.models.node import NodeCreate, NodeModify, NodeStatus, NodeUsageResponse
 from app.models.proxy import ProxyHost as ProxyHostModify
 from app.models.user import (
@@ -1045,6 +1045,36 @@ def update_admin(db: Session, dbadmin: Admin, modified_admin: AdminModify) -> Ad
         dbadmin.telegram_id = modified_admin.telegram_id
     if modified_admin.discord_webhook:
         dbadmin.discord_webhook = modified_admin.discord_webhook
+    if modified_admin.usage_warning_percent is not None:
+        dbadmin.usage_warning_percent = modified_admin.usage_warning_percent
+    if modified_admin.days_warning is not None:
+        dbadmin.days_warning = modified_admin.days_warning
+
+    db.commit()
+    db.refresh(dbadmin)
+    return dbadmin
+
+
+def update_admin_settings(
+    db: Session, dbadmin: Admin, modified_admin: AdminSettingsModify
+) -> Admin:
+    """
+    Updates an admin's settings (telegram_id, usage_warning_percent, days_warning).
+
+    Args:
+        db (Session): Database session.
+        dbadmin (Admin): The admin object to be updated.
+        modified_admin (AdminSettingsModify): The modified admin settings.
+
+    Returns:
+        Admin: The updated admin object.
+    """
+    if modified_admin.telegram_id is not None:
+        dbadmin.telegram_id = modified_admin.telegram_id
+    if modified_admin.usage_warning_percent is not None:
+        dbadmin.usage_warning_percent = modified_admin.usage_warning_percent
+    if modified_admin.days_warning is not None:
+        dbadmin.days_warning = modified_admin.days_warning
 
     db.commit()
     db.refresh(dbadmin)
@@ -1652,17 +1682,24 @@ def get_top_users_usage(
     db: Session,
     start_date: datetime,
     end_date: datetime,
-    limit: int = 10
+    limit: int = 10,
+    admin_id: Optional[int] = None
 ) -> List[Tuple[str, int]]:
     """
     Get top users by usage within a date range.
     """
-    return (
+    query = (
         db.query(User.username, func.sum(NodeUserUsage.used_traffic).label("total_usage"))
         .join(NodeUserUsage, User.id == NodeUserUsage.user_id)
         .filter(NodeUserUsage.created_at >= start_date)
         .filter(NodeUserUsage.created_at <= end_date)
-        .group_by(User.id)
+    )
+
+    if admin_id:
+        query = query.filter(User.admin_id == admin_id)
+
+    return (
+        query.group_by(User.id)
         .order_by(func.sum(NodeUserUsage.used_traffic).desc())
         .limit(limit)
         .all()

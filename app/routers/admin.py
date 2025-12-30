@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from app import xray
 from app.db import Session, crud, get_db
 from app.dependencies import get_admin_by_username, validate_admin
-from app.models.admin import Admin, AdminCreate, AdminModify, Token, UsersUsageLogResponse, TopUsersResponse, UserUsageInPeriod
+from app.models.admin import Admin, AdminCreate, AdminModify, AdminSettingsModify, Token, UsersUsageLogResponse, TopUsersResponse, UserUsageInPeriod
 from app.models.proxy import (
     ProxyTypes,
     ShadowsocksSettings,
@@ -77,6 +77,21 @@ def create_admin(
         raise HTTPException(status_code=409, detail="Admin already exists")
 
     return dbadmin
+
+
+@router.put(
+    "/admin/current",
+    response_model=Admin,
+    responses={403: responses._403},
+)
+def modify_current_admin(
+    modified_admin: AdminSettingsModify,
+    db: Session = Depends(get_db),
+    current_admin: Admin = Depends(Admin.get_current),
+):
+    """Modify the current admin's settings (telegram_id, usage_warning_percent, days_warning)."""
+    updated_admin = crud.update_admin_settings(db, current_admin, modified_admin)
+    return updated_admin
 
 
 @router.put(
@@ -323,18 +338,19 @@ def get_users_usage(
 @router.get(
     "/admin/users/top",
     response_model=TopUsersResponse,
-    dependencies=[Depends(Admin.get_current)],
 )
 def get_top_users_usage(
     start_date: datetime,
     end_date: datetime,
     limit: int = 10,
     db: Session = Depends(get_db),
+    admin: Admin = Depends(Admin.get_current),
 ):
     """
     Get top users by usage within a date range.
     """
-    usage_data = crud.get_top_users_usage(db, start_date, end_date, limit)
+    admin_id = admin.id if not admin.is_sudo else None
+    usage_data = crud.get_top_users_usage(db, start_date, end_date, limit, admin_id)
     return TopUsersResponse(
         users=[
             UserUsageInPeriod(username=username, used_traffic=int(usage))
