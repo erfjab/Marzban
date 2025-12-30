@@ -29,7 +29,7 @@ from app.db.models import (
     UserTemplate,
     UserUsageResetLogs,
 )
-from app.models.admin import AdminCreate, AdminModify, AdminPartialModify
+from app.models.admin import AdminCreate, AdminModify, AdminPartialModify, AdminSettingsModify
 from app.models.node import NodeCreate, NodeModify, NodeStatus, NodeUsageResponse
 from app.models.proxy import ProxyHost as ProxyHostModify
 from app.models.user import (
@@ -1045,6 +1045,36 @@ def update_admin(db: Session, dbadmin: Admin, modified_admin: AdminModify) -> Ad
         dbadmin.telegram_id = modified_admin.telegram_id
     if modified_admin.discord_webhook:
         dbadmin.discord_webhook = modified_admin.discord_webhook
+    if modified_admin.usage_warning_percent is not None:
+        dbadmin.usage_warning_percent = modified_admin.usage_warning_percent
+    if modified_admin.days_warning is not None:
+        dbadmin.days_warning = modified_admin.days_warning
+
+    db.commit()
+    db.refresh(dbadmin)
+    return dbadmin
+
+
+def update_admin_settings(
+    db: Session, dbadmin: Admin, modified_admin: AdminSettingsModify
+) -> Admin:
+    """
+    Updates an admin's settings (telegram_id, usage_warning_percent, days_warning).
+
+    Args:
+        db (Session): Database session.
+        dbadmin (Admin): The admin object to be updated.
+        modified_admin (AdminSettingsModify): The modified admin settings.
+
+    Returns:
+        Admin: The updated admin object.
+    """
+    if modified_admin.telegram_id is not None:
+        dbadmin.telegram_id = modified_admin.telegram_id
+    if modified_admin.usage_warning_percent is not None:
+        dbadmin.usage_warning_percent = modified_admin.usage_warning_percent
+    if modified_admin.days_warning is not None:
+        dbadmin.days_warning = modified_admin.days_warning
 
     db.commit()
     db.refresh(dbadmin)

@@ -26,6 +26,8 @@ class Admin(BaseModel):
     telegram_id: Optional[int] = None
     discord_webhook: Optional[str] = None
     users_usage: Optional[int] = None
+    usage_warning_percent: Optional[int] = None
+    days_warning: Optional[int] = None
     model_config = ConfigDict(from_attributes=True)
 
     @field_validator("users_usage", mode="before")
@@ -114,6 +116,8 @@ class AdminModify(BaseModel):
     is_sudo: bool
     telegram_id: Optional[int] = None
     discord_webhook: Optional[str] = None
+    usage_warning_percent: Optional[int] = None
+    days_warning: Optional[int] = None
 
     @property
     def hashed_password(self):
@@ -130,6 +134,19 @@ class AdminModify(BaseModel):
 
 class AdminPartialModify(AdminModify):
     __annotations__ = {k: Optional[v] for k, v in AdminModify.__annotations__.items()}
+
+
+class AdminSettingsModify(BaseModel):
+    telegram_id: Optional[int] = None
+    usage_warning_percent: Optional[int] = None
+    days_warning: Optional[int] = None
+
+    @field_validator("usage_warning_percent", "days_warning")
+    @classmethod
+    def validate_positive(cls, v):
+        if v is not None and v <= 0:
+            raise ValueError("Must be greater than 0")
+        return v
 
 
 class AdminInDB(Admin):
