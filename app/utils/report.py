@@ -273,6 +273,12 @@ def data_usage_percent_reached(
             user_id=user_id,
             threshold=threshold,
         )
+        try:
+            telegram.report_data_usage_percent_reached(
+                username=user.username, percent=percent, admin=user.admin
+            )
+        except Exception:
+            pass
 
 
 def expire_days_reached(
@@ -292,6 +298,12 @@ def expire_days_reached(
             user_id=user_id,
             threshold=threshold,
         )
+        try:
+            telegram.report_expire_days_reached(
+                username=user.username, days=days, admin=user.admin
+            )
+        except Exception:
+            pass
 
 
 def login(username: str, password: str, client_ip: str, success: bool) -> None:

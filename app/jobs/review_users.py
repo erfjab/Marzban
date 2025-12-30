@@ -108,8 +108,7 @@ def review():
             elif expired:
                 status = UserStatus.expired
             else:
-                if WEBHOOK_ADDRESS:
-                    add_notification_reminders(db, user, now)
+                add_notification_reminders(db, user, now)
                 continue
 
             xray.operations.remove_user(user)
