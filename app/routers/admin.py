@@ -8,9 +8,8 @@ from sqlalchemy.exc import IntegrityError
 from app import xray
 from app.db import Session, crud, get_db
 from app.dependencies import get_admin_by_username, validate_admin
-from app.models.admin import Admin, AdminCreate, AdminModify, Token, UsersUsageLogResponse
+from app.models.admin import Admin, AdminCreate, AdminModify, Token, UsersUsageLogResponse, TopUsersResponse, UserUsageInPeriod
 from app.models.proxy import (
-    ProxyInbound,
     ProxyTypes,
     ShadowsocksSettings,
     VLESSSettings,
@@ -318,3 +317,27 @@ def get_users_usage(
 ):
     usages = crud.get_users_usages_by_hour(db, admin, start_date, end_date)
     return {"usages": usages}
+
+
+
+@router.get(
+    "/admin/users/top",
+    response_model=TopUsersResponse,
+    dependencies=[Depends(Admin.get_current)],
+)
+def get_top_users_usage(
+    start_date: datetime,
+    end_date: datetime,
+    limit: int = 10,
+    db: Session = Depends(get_db),
+):
+    """
+    Get top users by usage within a date range.
+    """
+    usage_data = crud.get_top_users_usage(db, start_date, end_date, limit)
+    return TopUsersResponse(
+        users=[
+            UserUsageInPeriod(username=username, used_traffic=int(usage))
+            for username, usage in usage_data
+        ]
+    )
