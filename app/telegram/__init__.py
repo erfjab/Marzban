@@ -42,6 +42,8 @@ from .handlers.report import (  # noqa
     report_user_data_reset_by_next,
     report_user_subscription_revoked,
     report_login,
+    report_data_usage_percent_reached,
+    report_expire_days_reached,
 )
 
 __all__ = [
@@ -55,4 +57,6 @@ __all__ = [
     "report_user_data_reset_by_next",
     "report_user_subscription_revoked",
     "report_login",
+    "report_data_usage_percent_reached",
+    "report_expire_days_reached",
 ]

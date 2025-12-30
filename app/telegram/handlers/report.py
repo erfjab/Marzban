@@ -245,3 +245,49 @@ def report_login(username: str, password: str, client_ip: str, status: str):
         client_ip=escape_html(client_ip),
     )
     return report(text=text)
+
+
+def report_data_usage_percent_reached(
+    username: str,
+    percent: float,
+    admin: Admin = None,
+):
+    text = """\
+⚠️ <b>#UsageWarning</b>
+➖➖➖➖➖➖➖➖➖
+<b>Username :</b> <code>{username}</code>
+<b>Usage Percent :</b> <code>{percent}%</code>
+➖➖➖➖➖➖➖➖➖
+<b>Belongs To :</b> <code>{belong_to}</code>""".format(
+        belong_to=escape_html(admin.username) if admin else None,
+        username=escape_html(username),
+        percent=percent,
+    )
+
+    return report(
+        chat_id=admin.telegram_id if admin and admin.telegram_id else None,
+        text=text,
+    )
+
+
+def report_expire_days_reached(
+    username: str,
+    days: int,
+    admin: Admin = None,
+):
+    text = """\
+⚠️ <b>#ExpirationWarning</b>
+➖➖➖➖➖➖➖➖➖
+<b>Username :</b> <code>{username}</code>
+<b>Days Left :</b> <code>{days}</code>
+➖➖➖➖➖➖➖➖➖
+<b>Belongs To :</b> <code>{belong_to}</code>""".format(
+        belong_to=escape_html(admin.username) if admin else None,
+        username=escape_html(username),
+        days=days,
+    )
+
+    return report(
+        chat_id=admin.telegram_id if admin and admin.telegram_id else None,
+        text=text,
+    )
