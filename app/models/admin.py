@@ -141,11 +141,18 @@ class AdminSettingsModify(BaseModel):
     usage_warning_percent: Optional[int] = None
     days_warning: Optional[int] = None
 
-    @field_validator("usage_warning_percent", "days_warning")
+    @field_validator("days_warning")
     @classmethod
     def validate_positive(cls, v):
         if v is not None and v <= 0:
             raise ValueError("Must be greater than 0")
+        return v
+
+    @field_validator("usage_warning_percent")
+    @classmethod
+    def validate_percent(cls, v):
+        if v is not None and (v <= 0 or v > 100):
+            raise ValueError("Must be between 1 and 100")
         return v
 
 
