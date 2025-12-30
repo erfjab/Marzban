@@ -1652,17 +1652,24 @@ def get_top_users_usage(
     db: Session,
     start_date: datetime,
     end_date: datetime,
-    limit: int = 10
+    limit: int = 10,
+    admin_id: Optional[int] = None
 ) -> List[Tuple[str, int]]:
     """
     Get top users by usage within a date range.
     """
-    return (
+    query = (
         db.query(User.username, func.sum(NodeUserUsage.used_traffic).label("total_usage"))
         .join(NodeUserUsage, User.id == NodeUserUsage.user_id)
         .filter(NodeUserUsage.created_at >= start_date)
         .filter(NodeUserUsage.created_at <= end_date)
-        .group_by(User.id)
+    )
+
+    if admin_id:
+        query = query.filter(User.admin_id == admin_id)
+
+    return (
+        query.group_by(User.id)
         .order_by(func.sum(NodeUserUsage.used_traffic).desc())
         .limit(limit)
         .all()

@@ -323,18 +323,19 @@ def get_users_usage(
 @router.get(
     "/admin/users/top",
     response_model=TopUsersResponse,
-    dependencies=[Depends(Admin.get_current)],
 )
 def get_top_users_usage(
     start_date: datetime,
     end_date: datetime,
     limit: int = 10,
     db: Session = Depends(get_db),
+    admin: Admin = Depends(Admin.get_current),
 ):
     """
     Get top users by usage within a date range.
     """
-    usage_data = crud.get_top_users_usage(db, start_date, end_date, limit)
+    admin_id = admin.id if not admin.is_sudo else None
+    usage_data = crud.get_top_users_usage(db, start_date, end_date, limit, admin_id)
     return TopUsersResponse(
         users=[
             UserUsageInPeriod(username=username, used_traffic=int(usage))
