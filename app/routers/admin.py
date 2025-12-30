@@ -1,4 +1,5 @@
 from typing import List, Optional, Dict
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -7,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from app import xray
 from app.db import Session, crud, get_db
 from app.dependencies import get_admin_by_username, validate_admin
-from app.models.admin import Admin, AdminCreate, AdminModify, Token
+from app.models.admin import Admin, AdminCreate, AdminModify, Token, UsersUsageLogResponse
 from app.models.proxy import (
     ProxyInbound,
     ProxyTypes,
@@ -306,3 +307,14 @@ def sync_admin(
             unsuccessful += 1
 
     return {"detail": f"Sync completed with {unsuccessful} unsuccessful updates."}
+
+
+@router.get("/admin/users/usage", response_model=UsersUsageLogResponse)
+def get_users_usage(
+    start_date: datetime,
+    end_date: datetime,
+    admin: Admin = Depends(Admin.get_current),
+    db: Session = Depends(get_db),
+):
+    usages = crud.get_users_usages_by_hour(db, admin, start_date, end_date)
+    return {"usages": usages}

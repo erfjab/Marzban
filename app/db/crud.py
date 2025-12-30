@@ -1612,9 +1612,38 @@ def delete_notification_reminder(db: Session, dbreminder: NotificationReminder) 
     return
 
 
-def count_online_users(db: Session, hours: int = 24):
+def count_online_users(db: Session, hours: int = 24, admins: List[str] = None):
     twenty_four_hours_ago = datetime.utcnow() - timedelta(hours=hours)
     query = db.query(func.count(User.id)).filter(
         User.online_at.isnot(None), User.online_at >= twenty_four_hours_ago
     )
+    if admins:
+        query = query.join(User.admin).filter(Admin.username.in_(admins))
     return query.scalar()
+
+
+def get_users_usages_by_hour(
+    db: Session,
+    admin: Admin,
+    start_date: datetime,
+    end_date: datetime,
+):
+    query = (
+        db.query(
+            NodeUserUsage.created_at.label("hour"),
+            func.sum(NodeUserUsage.used_traffic).label("usage"),
+        )
+        .join(User, NodeUserUsage.user_id == User.id)
+    )
+
+    if not admin.is_sudo:
+        query = query.filter(User.admin_id == admin.id)
+
+    query = query.filter(
+        NodeUserUsage.created_at >= start_date,
+        NodeUserUsage.created_at <= end_date,
+    )
+
+    query = query.group_by(NodeUserUsage.created_at).order_by(NodeUserUsage.created_at)
+
+    return query.all()

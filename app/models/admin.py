@@ -1,4 +1,5 @@
-from typing import Optional
+from datetime import datetime
+from typing import List, Optional
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -142,3 +143,13 @@ class AdminInDB(Admin):
 class AdminValidationResult(BaseModel):
     username: str
     is_sudo: bool
+
+
+class UsersUsageLogItem(BaseModel):
+    hour: datetime
+    usage: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UsersUsageLogResponse(BaseModel):
+    usages: List[UsersUsageLogItem]
