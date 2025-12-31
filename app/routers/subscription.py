@@ -72,6 +72,15 @@ def user_subscription(
     if dbuser.admin and hasattr(dbuser.admin, 'subscription_title') and dbuser.admin.subscription_title:
         subscription_title = dbuser.admin.subscription_title
     
+    # Use admin's custom announce or format with user data
+    announce_text = ""
+    announce_url = ""
+    if dbuser.admin and hasattr(dbuser.admin, 'announce') and dbuser.admin.announce:
+        # Format announce text with user variables
+        announce_text = (dbuser.admin.announce or "").format(**user.__dict__).strip()
+    if dbuser.admin and hasattr(dbuser.admin, 'announce_url') and dbuser.admin.announce_url:
+        announce_url = (dbuser.admin.announce_url or "").strip()
+    
     response_headers = {
         "content-disposition": f'attachment; filename="{user.username}"',
         "profile-web-page-url": str(request.url),
@@ -83,6 +92,12 @@ def user_subscription(
             for key, val in get_subscription_user_info(user).items()
         )
     }
+    
+    # Add announce headers if available
+    if announce_text:
+        response_headers["announce"] = encode_title(announce_text)
+    if announce_url:
+        response_headers["announce-url"] = announce_url
 
     if re.match(r'^([Cc]lash-verge|[Cc]lash[-\.]?[Mm]eta|[Ff][Ll][Cc]lash|[Mm]ihomo)', user_agent):
         conf = generate_subscription(user=user, config_format="clash-meta", as_base64=False, reverse=False)
@@ -184,6 +199,15 @@ def user_subscription_with_client_type(
     if dbuser.admin and hasattr(dbuser.admin, 'subscription_title') and dbuser.admin.subscription_title:
         subscription_title = dbuser.admin.subscription_title
 
+    # Use admin's custom announce or format with user data
+    announce_text = ""
+    announce_url = ""
+    if dbuser.admin and hasattr(dbuser.admin, 'announce') and dbuser.admin.announce:
+        # Format announce text with user variables
+        announce_text = (dbuser.admin.announce or "").format(**user.__dict__).strip()
+    if dbuser.admin and hasattr(dbuser.admin, 'announce_url') and dbuser.admin.announce_url:
+        announce_url = (dbuser.admin.announce_url or "").strip()
+
     response_headers = {
         "content-disposition": f'attachment; filename="{user.username}"',
         "profile-web-page-url": str(request.url),
@@ -195,6 +219,12 @@ def user_subscription_with_client_type(
             for key, val in get_subscription_user_info(user).items()
         )
     }
+    
+    # Add announce headers if available
+    if announce_text:
+        response_headers["announce"] = encode_title(announce_text)
+    if announce_url:
+        response_headers["announce-url"] = announce_url
 
     config = client_config.get(client_type)
     conf = generate_subscription(user=user,

@@ -328,6 +328,28 @@ const AdminForm: AdminFormType = ({
             />
           </Box>
         </HStack>
+        <HStack alignItems="flex-start" w="100%">
+          <Box w="100%">
+            <CustomInput
+              label={t("admins.announce", "Announce Text")}
+              size="sm"
+              placeholder="Welcome to VPN! Username: {username}"
+              {...form.register("announce")}
+              error={form.formState?.errors?.announce?.message}
+            />
+          </Box>
+        </HStack>
+        <HStack alignItems="flex-start" w="100%">
+          <Box w="100%">
+            <CustomInput
+              label={t("admins.announceUrl", "Announce URL")}
+              size="sm"
+              placeholder="https://t.me/support_channel"
+              {...form.register("announce_url")}
+              error={form.formState?.errors?.announce_url?.message}
+            />
+          </Box>
+        </HStack>
         <FormControl py={1}>
           <Controller
             name="is_sudo"

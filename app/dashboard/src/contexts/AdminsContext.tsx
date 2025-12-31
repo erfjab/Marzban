@@ -11,6 +11,8 @@ export const AdminSchema = z.object({
   telegram_id: z.union([z.number(), z.string()]).optional().nullable(),
   discord_webhook: z.string().optional().nullable(),
   subscription_title: z.string().optional().nullable(),
+  announce: z.string().optional().nullable(),
+  announce_url: z.string().optional().nullable(),
   users_usage: z.number().optional().nullable(),
 });
 
@@ -23,6 +25,8 @@ export const getAdminDefaultValues = (): AdminType => ({
   telegram_id: null,
   discord_webhook: null,
   subscription_title: null,
+  announce: null,
+  announce_url: null,
 });
 
 export const FetchAdminsQueryKey = "fetch-admins-query-key";

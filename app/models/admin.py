@@ -24,6 +24,8 @@ class Admin(BaseModel):
     telegram_id: Optional[int] = None
     discord_webhook: Optional[str] = None
     subscription_title: Optional[str] = None
+    announce: Optional[str] = None
+    announce_url: Optional[str] = None
     users_usage: Optional[int] = None
     model_config = ConfigDict(from_attributes=True)
 
@@ -95,6 +97,8 @@ class AdminCreate(Admin):
     telegram_id: Optional[int] = None
     discord_webhook: Optional[str] = None
     subscription_title: Optional[str] = None
+    announce: Optional[str] = None
+    announce_url: Optional[str] = None
 
     @property
     def hashed_password(self):
@@ -114,6 +118,8 @@ class AdminModify(BaseModel):
     telegram_id: Optional[int] = None
     discord_webhook: Optional[str] = None
     subscription_title: Optional[str] = None
+    announce: Optional[str] = None
+    announce_url: Optional[str] = None
 
     @property
     def hashed_password(self):
