@@ -90,7 +90,11 @@ def modify_current_admin(
     current_admin: Admin = Depends(Admin.get_current),
 ):
     """Modify the current admin's settings (telegram_id, usage_warning_percent, days_warning)."""
-    updated_admin = crud.update_admin_settings(db, current_admin, modified_admin)
+    db_admin = crud.get_admin(db, current_admin.username)
+    if not db_admin:
+        raise HTTPException(status_code=404, detail="Admin not found in database")
+
+    updated_admin = crud.update_admin_settings(db, db_admin, modified_admin)
     return updated_admin
 
 
