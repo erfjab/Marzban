@@ -80,7 +80,7 @@ def create_admin(
 
 
 @router.put(
-    "/admin/current",
+    "/admin/current/settings",
     response_model=Admin,
     responses={403: responses._403},
 )
