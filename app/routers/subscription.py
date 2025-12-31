@@ -66,11 +66,17 @@ def user_subscription(
         )
 
     crud.update_user_sub(db, dbuser, user_agent)
+    
+    # Use admin's custom subscription title or fallback to default
+    subscription_title = SUB_PROFILE_TITLE
+    if dbuser.admin and hasattr(dbuser.admin, 'subscription_title') and dbuser.admin.subscription_title:
+        subscription_title = dbuser.admin.subscription_title
+    
     response_headers = {
         "content-disposition": f'attachment; filename="{user.username}"',
         "profile-web-page-url": str(request.url),
         "support-url": SUB_SUPPORT_URL,
-        "profile-title": encode_title(SUB_PROFILE_TITLE),
+        "profile-title": encode_title(subscription_title),
         "profile-update-interval": SUB_UPDATE_INTERVAL,
         "subscription-userinfo": "; ".join(
             f"{key}={val}"
@@ -173,11 +179,16 @@ def user_subscription_with_client_type(
     """Provides a subscription link based on the specified client type (e.g., Clash, V2Ray)."""
     user: UserResponse = UserResponse.model_validate(dbuser)
 
+    # Use admin's custom subscription title or fallback to default
+    subscription_title = SUB_PROFILE_TITLE
+    if dbuser.admin and hasattr(dbuser.admin, 'subscription_title') and dbuser.admin.subscription_title:
+        subscription_title = dbuser.admin.subscription_title
+
     response_headers = {
         "content-disposition": f'attachment; filename="{user.username}"',
         "profile-web-page-url": str(request.url),
         "support-url": SUB_SUPPORT_URL,
-        "profile-title": encode_title(SUB_PROFILE_TITLE),
+        "profile-title": encode_title(subscription_title),
         "profile-update-interval": SUB_UPDATE_INTERVAL,
         "subscription-userinfo": "; ".join(
             f"{key}={val}"

@@ -23,6 +23,7 @@ class Admin(BaseModel):
     is_sudo: bool
     telegram_id: Optional[int] = None
     discord_webhook: Optional[str] = None
+    subscription_title: Optional[str] = None
     users_usage: Optional[int] = None
     model_config = ConfigDict(from_attributes=True)
 
@@ -93,6 +94,7 @@ class AdminCreate(Admin):
     password: str
     telegram_id: Optional[int] = None
     discord_webhook: Optional[str] = None
+    subscription_title: Optional[str] = None
 
     @property
     def hashed_password(self):
@@ -111,6 +113,7 @@ class AdminModify(BaseModel):
     is_sudo: bool
     telegram_id: Optional[int] = None
     discord_webhook: Optional[str] = None
+    subscription_title: Optional[str] = None
 
     @property
     def hashed_password(self):

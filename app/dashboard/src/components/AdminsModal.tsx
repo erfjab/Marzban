@@ -317,6 +317,17 @@ const AdminForm: AdminFormType = ({
             />
           </Box>
         </HStack>
+        <HStack alignItems="flex-start" w="100%">
+          <Box w="100%">
+            <CustomInput
+              label={t("admins.subscriptionTitle", "Subscription Title")}
+              size="sm"
+              placeholder="My VPN Service"
+              {...form.register("subscription_title")}
+              error={form.formState?.errors?.subscription_title?.message}
+            />
+          </Box>
+        </HStack>
         <FormControl py={1}>
           <Controller
             name="is_sudo"
