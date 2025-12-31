@@ -45,6 +45,7 @@ type DashboardStateType = {
   QRcodeLinks: string[] | null;
   isEditingHosts: boolean;
   isEditingNodes: boolean;
+  isEditingAdmins: boolean;
   isShowingNodesUsage: boolean;
   isResetingAllUsage: boolean;
   resetUsageUser: User | null;
@@ -65,6 +66,7 @@ type DashboardStateType = {
   setSubLink: (subscribeURL: string | null) => void;
   onEditingHosts: (isEditingHosts: boolean) => void;
   onEditingNodes: (isEditingHosts: boolean) => void;
+  onEditingAdmins: (isEditingAdmins: boolean) => void;
   onShowingNodesUsage: (isShowingNodesUsage: boolean) => void;
   resetDataUsage: (user: User) => Promise<void>;
   revokeSubscription: (user: User) => Promise<void>;
@@ -113,6 +115,7 @@ export const useDashboard = create(
     isResetingAllUsage: false,
     isEditingHosts: false,
     isEditingNodes: false,
+    isEditingAdmins: false,
     isShowingNodesUsage: false,
     resetUsageUser: null,
     revokeSubscriptionUser: null,
@@ -187,6 +190,9 @@ export const useDashboard = create(
     },
     onEditingNodes: (isEditingNodes: boolean) => {
       set({ isEditingNodes });
+    },
+    onEditingAdmins: (isEditingAdmins: boolean) => {
+      set({ isEditingAdmins });
     },
     onShowingNodesUsage: (isShowingNodesUsage: boolean) => {
       set({ isShowingNodesUsage });

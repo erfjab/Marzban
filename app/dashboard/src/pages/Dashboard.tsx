@@ -1,4 +1,5 @@
 import { Box, VStack } from "@chakra-ui/react";
+import { AdminsDialog } from "components/AdminsModal";
 import { CoreSettingsModal } from "components/CoreSettingsModal";
 import { DeleteUserModal } from "components/DeleteUserModal";
 import { Filters } from "components/Filters";
@@ -35,6 +36,7 @@ export const Dashboard: FC = () => {
         <HostsDialog />
         <ResetUserUsageModal />
         <RevokeSubscriptionModal />
+        <AdminsDialog />
         <NodesDialog />
         <NodesUsage />
         <ResetAllUsageModal />

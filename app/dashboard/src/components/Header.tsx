@@ -21,6 +21,7 @@ import {
   MoonIcon,
   SquaresPlusIcon,
   SunIcon,
+  UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import { DONATION_URL, REPO_URL } from "constants/Project";
 import { useDashboard } from "contexts/DashboardContext";
@@ -52,6 +53,7 @@ const LogoutIcon = chakra(ArrowLeftOnRectangleIcon, iconProps);
 const DonationIcon = chakra(CurrencyDollarIcon, iconProps);
 const HostsIcon = chakra(LinkIcon, iconProps);
 const NodesIcon = chakra(SquaresPlusIcon, iconProps);
+const AdminsIcon = chakra(UserGroupIcon, iconProps);
 const NodesUsageIcon = chakra(ChartPieIcon, iconProps);
 const ResetUsageIcon = chakra(DocumentMinusIcon, iconProps);
 const NotificationCircle = chakra(Box, {
@@ -95,6 +97,7 @@ export const Header: FC<HeaderProps> = ({ actions }) => {
     onEditingHosts,
     onResetAllUsage,
     onEditingNodes,
+    onEditingAdmins,
     onShowingNodesUsage,
   } = useDashboard();
   const { t } = useTranslation();
@@ -150,6 +153,14 @@ export const Header: FC<HeaderProps> = ({ actions }) => {
                     onClick={onEditingHosts.bind(null, true)}
                   >
                     {t("header.hostSettings")}
+                  </MenuItem>
+                  <MenuItem
+                    maxW="170px"
+                    fontSize="sm"
+                    icon={<AdminsIcon />}
+                    onClick={onEditingAdmins.bind(null, true)}
+                  >
+                    {t("header.adminsSettings", "Admins")}
                   </MenuItem>
                   <MenuItem
                     maxW="170px"
