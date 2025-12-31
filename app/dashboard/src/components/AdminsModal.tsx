@@ -46,6 +46,7 @@ import {
   useMutation,
   useQueryClient,
 } from "react-query";
+import { formatBytes } from "utils/formatByte";
 import {
   generateErrorMessage,
   generateSuccessMessage,
@@ -118,17 +119,28 @@ const AdminAccordion: FC<AccordionAdminType> = ({ toggleAccordion, admin }) => {
     >
       <AccordionButton px={2} borderRadius="3px" onClick={toggleAccordion}>
         <HStack w="full" justifyContent="space-between" pr={2}>
-          <Text
-            as="span"
-            fontWeight="medium"
-            fontSize="sm"
-            flex="1"
-            textAlign="left"
-            color="gray.700"
-            _dark={{ color: "gray.300" }}
-          >
-            {admin.username}
-          </Text>
+          <HStack flex="1" spacing={2}>
+            <Text
+              as="span"
+              fontWeight="medium"
+              fontSize="sm"
+              textAlign="left"
+              color="gray.700"
+              _dark={{ color: "gray.300" }}
+            >
+              {admin.username}
+            </Text>
+            {admin.users_usage !== null && admin.users_usage !== undefined && (
+              <Text
+                as="span"
+                fontSize="xs"
+                color="gray.500"
+                _dark={{ color: "gray.500" }}
+              >
+                ({formatBytes(admin.users_usage)})
+              </Text>
+            )}
+          </HStack>
           <HStack>
             {admin.is_sudo && (
               <Badge
