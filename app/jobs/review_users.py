@@ -2,6 +2,7 @@ from logging import getLogger
 from datetime import datetime, timedelta
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
+from concurrent.futures import ThreadPoolExecutor
 
 from sqlalchemy import Integer, and_, cast, func, or_
 from sqlalchemy.orm import Session, joinedload, load_only
@@ -11,13 +12,12 @@ from app.db import GetDB
 from app.db.models import User
 from app.models.user import UserStatus
 from app.utils.timer import JobTimer
-from app.utils.concurrency import threaded_function
 from config import JOB_REVIEW_USERS_INTERVAL
 
 logger = getLogger("uvicorn.error")
+executor = ThreadPoolExecutor(max_workers=5)
 
 
-@threaded_function
 def bg_remove_user(user_id: int, user_username: str):
     u = SimpleNamespace(id=user_id, username=user_username)
     try:
@@ -57,7 +57,7 @@ def review():
             limited = user.data_limit and user.used_traffic >= user.data_limit
             expired = user.expire and user.expire <= now_ts
 
-            bg_remove_user(user.id, user.username)
+            executor.submit(bg_remove_user, user.id, user.username)
 
             if limited:
                 limited_ids.append(user.id)
@@ -90,7 +90,7 @@ def review():
         if stuck_users:
             logger.warning(f"Found {len(stuck_users)} stuck users to remove")
             for user in stuck_users:
-                bg_remove_user(user.id, user.username)
+                executor.submit(bg_remove_user, user.id, user.username)
 
         timer.checkpoint("review_active_users")
 
