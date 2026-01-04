@@ -126,14 +126,14 @@ class ReSTXRayNode:
         if not self._session_id:
             return False
         try:
-            self.make_request("/ping", timeout=30)
+            self.make_request("/ping", timeout=5)
             return True
         except NodeAPIError:
             return False
 
     @property
     def started(self):
-        res = self.make_request("/", timeout=30)
+        res = self.make_request("/", timeout=5)
         return res.get("started", False)
 
     @property
@@ -150,7 +150,7 @@ class ReSTXRayNode:
                     ssl_target_name="Gozargah",
                 )
             else:
-                raise ConnectionError("Node is not started")
+                raise ConnectionError(f"Node {self.address} is not started")
 
         return self._api
 
@@ -159,15 +159,15 @@ class ReSTXRayNode:
         self._node_certfile = string_to_temp_file(self._node_cert)
         self.session.verify = self._node_certfile.name
 
-        res = self.make_request("/connect", timeout=30)
+        res = self.make_request("/connect", timeout=5)
         self._session_id = res["session_id"]
 
     def disconnect(self):
-        self.make_request("/disconnect", timeout=30)
+        self.make_request("/disconnect", timeout=5)
         self._session_id = None
 
     def get_version(self):
-        res = self.make_request("/", timeout=30)
+        res = self.make_request("/", timeout=5)
         return res.get("core_version")
 
     def start(self, config: XRayConfig):
@@ -392,7 +392,7 @@ class RPyCXRayNode:
             raise ConnectionError("Node is not connected")
 
         if not self.started:
-            raise ConnectionError("Node is not started")
+            raise ConnectionError(f"Node '{self.address}' is not started")
 
         return self._api
 

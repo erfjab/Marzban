@@ -135,7 +135,7 @@ def get_users_stats(api: XRayAPI):
     try:
         params = defaultdict(int)
         for stat in filter(
-            attrgetter("value"), api.get_users_stats(reset=True, timeout=30)
+            attrgetter("value"), api.get_users_stats(reset=True, timeout=5)
         ):
             params[stat.name.split(".", 1)[0]] += stat.value
         params = list({"uid": uid, "value": value} for uid, value in params.items())
