@@ -126,14 +126,14 @@ class ReSTXRayNode:
         if not self._session_id:
             return False
         try:
-            self.make_request("/ping", timeout=5)
+            self.make_request("/ping", timeout=30)
             return True
         except NodeAPIError:
             return False
 
     @property
     def started(self):
-        res = self.make_request("/", timeout=5)
+        res = self.make_request("/", timeout=30)
         return res.get("started", False)
 
     @property
@@ -159,15 +159,15 @@ class ReSTXRayNode:
         self._node_certfile = string_to_temp_file(self._node_cert)
         self.session.verify = self._node_certfile.name
 
-        res = self.make_request("/connect", timeout=5)
+        res = self.make_request("/connect", timeout=30)
         self._session_id = res["session_id"]
 
     def disconnect(self):
-        self.make_request("/disconnect", timeout=5)
+        self.make_request("/disconnect", timeout=30)
         self._session_id = None
 
     def get_version(self):
-        res = self.make_request("/", timeout=5)
+        res = self.make_request("/", timeout=30)
         return res.get("core_version")
 
     def start(self, config: XRayConfig):
@@ -433,7 +433,7 @@ class RPyCXRayNode:
             ssl_target_name="Gozargah",
         )
         try:
-            grpc.channel_ready_future(self._api._channel).result(timeout=5)
+            grpc.channel_ready_future(self._api._channel).result(timeout=30)
         except grpc.FutureTimeoutError:
             start_time = time.time()
             end_time = start_time + 3  # check logs for 3 seconds

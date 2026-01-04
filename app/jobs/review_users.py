@@ -1,5 +1,6 @@
 from logging import getLogger
-from datetime import datetime
+from datetime import datetime, timedelta
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Integer, and_, cast, func, or_
@@ -10,9 +11,20 @@ from app.db import GetDB
 from app.db.models import User
 from app.models.user import UserStatus
 from app.utils.timer import JobTimer
+from app.utils.concurrency import threaded_function
 from config import JOB_REVIEW_USERS_INTERVAL
 
 logger = getLogger("uvicorn.error")
+
+
+@threaded_function
+def bg_remove_user(user_id: int, user_username: str):
+    u = SimpleNamespace(id=user_id, username=user_username)
+    try:
+        xray.operations.remove_user(u)
+    except Exception as e:
+        logger.exception(f"Failed to remove user id={u.id}: {e}")
+
 
 def review():
     timer = JobTimer("review_users")
@@ -45,11 +57,7 @@ def review():
             limited = user.data_limit and user.used_traffic >= user.data_limit
             expired = user.expire and user.expire <= now_ts
 
-            try:
-                xray.operations.remove_user(user)
-            except Exception as e:
-                logger.exception(f"Failed to remove user id={user.id}: {e}")
-                continue
+            bg_remove_user(user.id, user.username)
 
             if limited:
                 limited_ids.append(user.id)
@@ -70,6 +78,19 @@ def review():
                 synchronize_session=False,
             )
             logger.warning(f"{len(expired_ids)} user(s) set to expired")
+
+        stuck_users = (
+            db.query(User)
+            .filter(
+                User.status.in_([UserStatus.expired, UserStatus.limited]),
+                User.online_at > User.last_status_change + timedelta(minutes=30),
+            )
+            .all()
+        )
+        if stuck_users:
+            logger.warning(f"Found {len(stuck_users)} stuck users to remove")
+            for user in stuck_users:
+                bg_remove_user(user.id, user.username)
 
         timer.checkpoint("review_active_users")
 
