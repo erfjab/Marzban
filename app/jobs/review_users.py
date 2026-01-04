@@ -16,14 +16,21 @@ from config import JOB_REVIEW_USERS_INTERVAL
 
 logger = getLogger("uvicorn.error")
 executor = ThreadPoolExecutor(max_workers=5)
+pending_removals = set()
 
 
 def bg_remove_user(user_id: int, user_username: str):
+    if user_id in pending_removals:
+        return
+
+    pending_removals.add(user_id)
     u = SimpleNamespace(id=user_id, username=user_username)
     try:
         xray.operations.remove_user(u)
     except Exception as e:
         logger.exception(f"Failed to remove user id={u.id}: {e}")
+    finally:
+        pending_removals.discard(user_id)
 
 
 def review():
