@@ -4,6 +4,7 @@ from app import logger, scheduler
 from app.db import GetDB, crud
 from app.models.admin import Admin
 from app.utils import report
+from app.utils.timer import JobTimer
 from config import USER_AUTODELETE_INCLUDE_LIMITED_ACCOUNTS
 
 SYSTEM_ADMIN = Admin(
@@ -12,10 +13,12 @@ SYSTEM_ADMIN = Admin(
 
 
 def remove_expired_users():
+    timer = JobTimer("remove_expired_users")
     with GetDB() as db:
         deleted_users = crud.autodelete_expired_users(
             db, USER_AUTODELETE_INCLUDE_LIMITED_ACCOUNTS
         )
+        timer.checkpoint("delete_users")
 
         for user in deleted_users:
             report.user_deleted(
@@ -24,6 +27,8 @@ def remove_expired_users():
                 user_admin=Admin.model_validate(user.admin) if user.admin else None,
             )
             logger.log(logging.INFO, "Expired user %s deleted." % user.username)
+        timer.checkpoint("report_deleted")
+    timer.stop()
 
 
 scheduler.add_job(

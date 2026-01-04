@@ -4,11 +4,13 @@ import traceback
 from app import app, logger, scheduler, xray
 from app.db import GetDB, crud
 from app.models.node import NodeStatus
+from app.utils.timer import JobTimer
 from config import JOB_CORE_HEALTH_CHECK_INTERVAL
 from xray_api import exc as xray_exc
 
 
 def core_health_check():
+    timer = JobTimer("core_health_check")
     config = None
 
     # main core
@@ -16,6 +18,7 @@ def core_health_check():
         if not config:
             config = xray.config.include_db_users()
         xray.core.restart(config)
+    timer.checkpoint("check_main_core")
 
     # nodes' core
     for node_id, node in list(xray.nodes.items()):
@@ -32,6 +35,8 @@ def core_health_check():
             if not config:
                 config = xray.config.include_db_users()
             xray.operations.connect_node(node_id, config)
+    timer.checkpoint("check_nodes")
+    timer.stop()
 
 
 @app.on_event("startup")

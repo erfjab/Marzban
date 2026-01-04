@@ -20,6 +20,7 @@ from config import (
 from xray_api import XRay as XRayAPI
 from xray_api import exc as xray_exc
 from app.morebot import Morebot
+from app.utils.timer import JobTimer
 
 
 def safe_execute(db: Session, stmt, params=None):
@@ -159,6 +160,7 @@ def get_outbounds_stats(api: XRayAPI):
 
 
 def record_user_usages():
+    timer = JobTimer("record_user_usages")
     api_instances = {None: xray.api}
     usage_coefficient = {None: 1}  # default usage coefficient for the main api instance
 
@@ -175,6 +177,7 @@ def record_user_usages():
             for node_id, api in api_instances.items()
         }
     api_params = {node_id: future.result() for node_id, future in futures.items()}
+    timer.checkpoint("fetch_stats")
 
     users_usage = defaultdict(int)
     for node_id, params in api_params.items():
@@ -188,7 +191,9 @@ def record_user_usages():
     users_usage = list(
         {"uid": uid, "value": value} for uid, value in users_usage.items()
     )
+    timer.checkpoint("aggregation")
     if not users_usage:
+        timer.stop()
         return
 
     with GetDB() as db:
@@ -196,6 +201,7 @@ def record_user_usages():
         Morebot.report_admin_usage(
             db, users_usage=users_usage, user_admin_map=user_admin_map
         )
+    timer.checkpoint("report_admin_usage")
 
     admin_usage = defaultdict(int)
     for user_usage in users_usage:
@@ -227,15 +233,19 @@ def record_user_usages():
                 .values(users_usage=Admin.users_usage + bindparam("value"))
             )
             safe_execute(db, admin_update_stmt, admin_data)
+    timer.checkpoint("db_update")
 
     if DISABLE_RECORDING_NODE_USAGE:
+        timer.stop()
         return
 
     for node_id, params in api_params.items():
         record_user_stats(params, node_id, usage_coefficient[node_id])
+    timer.stop()
 
 
 def record_node_usages():
+    timer = JobTimer("record_node_usages")
     api_instances = {None: xray.api}
     for node_id, node in list(xray.nodes.items()):
         if node.connected and node.started:
@@ -247,6 +257,7 @@ def record_node_usages():
             for node_id, api in api_instances.items()
         }
     api_params = {node_id: future.result() for node_id, future in futures.items()}
+    timer.checkpoint("fetch_stats")
 
     total_up = 0
     total_down = 0
@@ -255,6 +266,7 @@ def record_node_usages():
             total_up += param["up"]
             total_down += param["down"]
     if not (total_up or total_down):
+        timer.stop()
         return
 
     # record nodes usage
@@ -263,17 +275,28 @@ def record_node_usages():
             uplink=System.uplink + total_up, downlink=System.downlink + total_down
         )
         safe_execute(db, stmt)
+    timer.checkpoint("db_update")
 
     if DISABLE_RECORDING_NODE_USAGE:
+        timer.stop()
         return
 
     for node_id, params in api_params.items():
         record_node_stats(params, node_id)
+    timer.stop()
 
 
 scheduler.add_job(
-    record_user_usages, "interval", seconds=JOB_RECORD_USER_USAGES_INTERVAL, coalesce=True, max_instances=1
+    record_user_usages,
+    "interval",
+    seconds=JOB_RECORD_USER_USAGES_INTERVAL,
+    coalesce=True,
+    max_instances=1,
 )
 scheduler.add_job(
-    record_node_usages, "interval", seconds=JOB_RECORD_NODE_USAGES_INTERVAL, coalesce=True, max_instances=1
+    record_node_usages,
+    "interval",
+    seconds=JOB_RECORD_NODE_USAGES_INTERVAL,
+    coalesce=True,
+    max_instances=1,
 )
