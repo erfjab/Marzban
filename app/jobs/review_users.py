@@ -89,6 +89,7 @@ def review():
         stuck_users = (
             db.query(User)
             .filter(
+                User.id.notin_(pending_removals),
                 User.status.in_([UserStatus.expired, UserStatus.limited]),
                 User.online_at > User.last_status_change + timedelta(minutes=30),
             )
