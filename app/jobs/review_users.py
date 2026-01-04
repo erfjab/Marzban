@@ -15,6 +15,7 @@ from app.db import (
 from app.models.user import ReminderType, UserResponse, UserStatus
 from app.utils import report
 from app.utils.helpers import calculate_expiration_days, calculate_usage_percent
+from app.utils.timer import JobTimer
 from config import (
     JOB_REVIEW_USERS_INTERVAL,
     NOTIFY_DAYS_LEFT,
@@ -77,6 +78,7 @@ def reset_user_by_next_report(db: Session, user: "User"):
 
 
 def review():
+    timer = JobTimer("review_users")
     now = datetime.utcnow()
     now_ts = now.timestamp()
     with GetDB() as db:
@@ -114,6 +116,7 @@ def review():
             )
 
             logger.info(f'User "{user.username}" status changed to {status}')
+        timer.checkpoint("review_active_users")
 
         for user in get_users(db, status=UserStatus.on_hold):
             if user.edit_at:
@@ -145,6 +148,8 @@ def review():
             )
 
             logger.info(f'User "{user.username}" status changed to {status}')
+        timer.checkpoint("review_on_hold_users")
+    timer.stop()
 
 
 scheduler.add_job(

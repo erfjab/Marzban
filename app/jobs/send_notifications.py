@@ -9,6 +9,7 @@ from app import app, logger, scheduler
 from app.db import GetDB
 from app.db.models import NotificationReminder
 from app.utils.notification import queue
+from app.utils.timer import JobTimer
 from config import (
     JOB_SEND_NOTIFICATIONS_INTERVAL,
     NUMBER_OF_RECURRENT_NOTIFICATIONS,
@@ -55,7 +56,9 @@ def send_req(w_address: str, data):
 
 
 def send_notifications():
+    timer = JobTimer("send_notifications")
     if not queue:
+        timer.stop()
         return
 
     notifications_to_send = list()
@@ -71,8 +74,10 @@ def send_notifications():
             notifications_to_send.append(notification)
     except IndexError:  # if the queue is empty
         pass
+    timer.checkpoint("process_queue")
 
     if not notifications_to_send:
+        timer.stop()
         return
     if not send([jsonable_encoder(notif) for notif in notifications_to_send]):
         for notification in notifications_to_send:
@@ -83,14 +88,20 @@ def send_notifications():
                 dt.utcnow() + td(seconds=RECURRENT_NOTIFICATIONS_TIMEOUT)
             ).timestamp()
             queue.append(notification)
+        timer.checkpoint("send_failed_retry")
+    else:
+        timer.checkpoint("send_success")
+    timer.stop()
 
 
 def delete_expired_reminders() -> None:
+    timer = JobTimer("delete_expired_reminders")
     with GetDB() as db:
         db.query(NotificationReminder).filter(
             NotificationReminder.expires_at < dt.utcnow()
         ).delete()
         db.commit()
+    timer.stop()
 
 
 if WEBHOOK_ADDRESS:
