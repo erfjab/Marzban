@@ -91,7 +91,7 @@ def review():
             .filter(
                 User.id.notin_(pending_removals),
                 User.status.in_([UserStatus.expired, UserStatus.limited]),
-                User.online_at > User.last_status_change + timedelta(minutes=30),
+                User.online_at > User.last_status_change + timedelta(minutes=1),
             )
             .all()
         )
@@ -99,6 +99,10 @@ def review():
             logger.warning(f"Found {len(stuck_users)} stuck users to remove")
             for user in stuck_users:
                 executor.submit(bg_remove_user, user.id, user.username)
+        db.query(User).filter(User.id.in_([u.id for u in stuck_users])).update(
+            {User.last_status_change: now}, synchronize_session=False
+        )
+        db.commit()
 
         timer.checkpoint("review_active_users")
 
