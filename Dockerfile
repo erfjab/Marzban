@@ -17,12 +17,10 @@ RUN python3 -m pip install --upgrade pip setuptools \
 
 FROM python:$PYTHON_VERSION-slim
 
-ENV PYTHON_LIB_PATH=/usr/local/lib/python${PYTHON_VERSION}/site-packages
 WORKDIR /code
 
-RUN rm -rf $PYTHON_LIB_PATH/*
-
-COPY --from=build $PYTHON_LIB_PATH $PYTHON_LIB_PATH
+# Copy all Python packages and binaries from build stage
+COPY --from=build /usr/local/lib /usr/local/lib
 COPY --from=build /usr/local/bin /usr/local/bin
 COPY --from=build /usr/local/share/xray /usr/local/share/xray
 
